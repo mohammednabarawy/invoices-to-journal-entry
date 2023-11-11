@@ -2,7 +2,7 @@ from PyQt5.QtWidgets import QWidget, QPushButton, QVBoxLayout, QLineEdit, QLabel
 import sqlite3
 
 
-class SettingsWindow(QWidget):
+class ManageProjects(QWidget):
     def __init__(self):
         super().__init__()
         self.init_ui()
@@ -13,7 +13,7 @@ class SettingsWindow(QWidget):
 
     def init_ui(self):
         self.setGeometry(300, 300, 400, 200)
-        self.setWindowTitle('Settings')
+        self.setWindowTitle('manage projects')
 
         # Input fields for project details
         self.project_name_input = QLineEdit()
@@ -173,6 +173,26 @@ class SettingsWindow(QWidget):
             self.display_current_project()
         else:
             self.show_message_box("Please specify a project name to delete.")
+
+    def add_expense_to_db(self):
+        # Logic to add the expense details to the project_expenses table
+        pass
+
+    def edit_expense(self):
+        # Logic to edit the expense details in the project_expenses table
+        pass
+
+    def delete_expense(self):
+        # Logic to delete the expense details from the project_expenses table
+        pass
+
+    def get_expenses_from_db(self):
+        # Logic to retrieve expense details from the database
+        pass
+
+    def display_current_expense(self):
+        # Logic to display the current expense details
+        pass
 
     def show_message_box(self, message):
         msg = QMessageBox()

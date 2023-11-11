@@ -3,9 +3,9 @@ import pandas as pd
 from PyQt5.QtWidgets import QApplication, QWidget, QPushButton, QVBoxLayout, QTableWidget, QTableWidgetItem, QMessageBox
 from PyQt5.QtWidgets import QFileDialog  # Add QFileDialog import
 import sqlite3
-from settings_window import SettingsWindow
-from PyQt5.QtWidgets import QApplication, QWidget, QPushButton, QVBoxLayout, QTableWidget, QTableWidgetItem, QMessageBox, QGridLayout, QFileDialog
-from PyQt5.QtWidgets import QComboBox
+from manage_projects import ManageProjects
+from PyQt5.QtWidgets import QApplication, QWidget, QComboBox, QPushButton, QVBoxLayout, QTableWidget, QTableWidgetItem, QMessageBox, QGridLayout, QFileDialog
+from ExpenseManagement import ExpenseManagement
 
 
 class InvoiceProcessingApp(QWidget):
@@ -14,7 +14,8 @@ class InvoiceProcessingApp(QWidget):
 
         self.invoice_data = []
         self.init_ui()
-        self.settings_window = SettingsWindow()
+        self.manageprojects_window = ManageProjects()
+        self.expense_management_window = ExpenseManagement()
 
     def init_ui(self):
         self.setWindowTitle('Invoice Processing App')
@@ -36,8 +37,14 @@ class InvoiceProcessingApp(QWidget):
         self.delete_row_button = QPushButton('Delete Row')
         self.delete_row_button.clicked.connect(self.delete_row)
 
-        self.settings_button = QPushButton('Settings')
-        self.settings_button.clicked.connect(self.show_settings)
+        self.manageprojects_button = QPushButton('manage projects')
+        self.manageprojects_button.clicked.connect(self.show_manageprojects)
+        self.manageprojects_button = QPushButton('Manage Projects')
+        self.manageprojects_button.clicked.connect(self.show_manageprojects)
+
+        self.expense_management_button = QPushButton('Expense Management')
+        self.expense_management_button.clicked.connect(
+            self.show_expense_management)
 
         # Create a grid layout for the buttons
         button_layout = QGridLayout()
@@ -46,7 +53,9 @@ class InvoiceProcessingApp(QWidget):
         button_layout.addWidget(self.process_button, 0, 2)
         button_layout.addWidget(self.add_row_button, 1, 0)
         button_layout.addWidget(self.delete_row_button, 1, 1)
-        button_layout.addWidget(self.settings_button, 1, 2)
+        button_layout.addWidget(self.manageprojects_button, 1, 2)
+        button_layout.addWidget(
+            self.expense_management_button, 2, 0)  # Add the new button
 
         # Create table for invoice data
         self.table = QTableWidget()
@@ -68,8 +77,11 @@ class InvoiceProcessingApp(QWidget):
         self.conn = sqlite3.connect('projects.db')
         self.create_projects_table()
 
-    def show_settings(self):
-        self.settings_window.show()
+    def show_manageprojects(self):
+        self.manageprojects_window.show()
+
+    def show_expense_management(self):
+        self.expense_management_window.show()
 
     def create_projects_table(self):
         cursor = self.conn.cursor()
