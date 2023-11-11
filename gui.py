@@ -122,6 +122,13 @@ class InvoiceProcessingApp(QWidget):
             invoice_number = self.table.item(row, 5).text()
             supplier = self.table.item(row, 6).text()
             tax_number = self.table.item(row, 7).text()
+            # Fetch project details from the database
+            project_details = self.get_project_details_from_db(project)
+            if project_details:
+                debit_account, vat_account, credit_account, cost_center = project_details
+            else:
+                error_rows.append(row)
+                continue
 
             self.invoice_data.append({
                 'Date': date,
@@ -131,7 +138,11 @@ class InvoiceProcessingApp(QWidget):
                 'Project': project,
                 'Invoice Number': invoice_number,
                 'Supplier': supplier,
-                'Tax Number': tax_number
+                'Tax Number': tax_number,
+                'Debit Account': debit_account,
+                'VAT Account': vat_account,
+                'Credit Account': credit_account,
+                'Cost Center': cost_center
             })
 
         # Process each invoice and write to Excel
@@ -228,6 +239,12 @@ class InvoiceProcessingApp(QWidget):
         msg.setText(message)
         msg.setWindowTitle("Process Complete")
         msg.exec_()
+
+    def get_project_details_from_db(self, project_name):
+        cursor = self.conn.cursor()
+        cursor.execute(
+            'SELECT debit_account, vat_account, credit_account, cost_center FROM projects WHERE project_name = ?', (project_name,))
+        return cursor.fetchone()
 
     def show_error_message(self, error_rows):
         msg = QMessageBox()
