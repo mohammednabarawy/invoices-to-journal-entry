@@ -5,6 +5,7 @@ from PyQt5.QtWidgets import QFileDialog  # Add QFileDialog import
 import sqlite3
 from settings_window import SettingsWindow
 from PyQt5.QtWidgets import QApplication, QWidget, QPushButton, QVBoxLayout, QTableWidget, QTableWidgetItem, QMessageBox, QGridLayout, QFileDialog
+from PyQt5.QtWidgets import QComboBox
 
 
 class InvoiceProcessingApp(QWidget):
@@ -49,10 +50,11 @@ class InvoiceProcessingApp(QWidget):
 
         # Create table for invoice data
         self.table = QTableWidget()
-        self.table.setColumnCount(8)
+        self.table.setColumnCount(9)
         self.table.setHorizontalHeaderLabels([
             'Date', 'Origin Amount', 'Tax', 'Total Amount',
-            'Project', 'Invoice Number', 'Supplier', 'Tax Number'
+            # Add 'Expense' to the headers
+            'Project', 'Invoice Number', 'Supplier', 'Tax Number', 'Expense'
         ])
 
         # Create main layout
@@ -101,13 +103,21 @@ class InvoiceProcessingApp(QWidget):
 
     def populate_table(self, df):
         self.table.setRowCount(0)
-        self.table.setColumnCount(df.shape[1])
+        # Add 1 for the 'Expense' column
+        self.table.setColumnCount(df.shape[1] + 1)
 
         for row in range(df.shape[0]):
             self.table.insertRow(row)
             for col in range(df.shape[1]):
                 item = QTableWidgetItem(str(df.iloc[row, col]))
                 self.table.setItem(row, col, item)
+
+            # Adding the combo box in the 'Expense' column for each row
+            combo_box = QComboBox()
+            # Add actual expenses
+            combo_box.addItems(['Expense 1', 'Expense 2', 'Expense 3'])
+            # Add the combo box in the new 'Expense' column
+            self.table.setCellWidget(row, df.shape[1], combo_box)
 
     def process_invoices(self):
         self.invoice_data = []
