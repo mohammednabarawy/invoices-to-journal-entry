@@ -99,6 +99,17 @@ class InvoiceProcessingApp(QWidget):
     def add_invoice(self):
         row_position = self.table.rowCount()
         self.table.insertRow(row_position)
+        combo_box_projects = QComboBox()
+        project_names = self.get_project_names_from_db()
+        combo_box_projects.addItems(project_names)
+        # Set for 'Project' column (index 4)
+        self.table.setCellWidget(row_position, 4, combo_box_projects)
+
+        combo_box_expenses = QComboBox()
+        expense_names = self.get_expense_names_from_db()
+        combo_box_expenses.addItems(expense_names)
+        # Set for 'Expense' column (index 8)
+        self.table.setCellWidget(row_position, 8, combo_box_expenses)
 
     def import_invoices(self):
         file_dialog = QFileDialog()
@@ -114,22 +125,50 @@ class InvoiceProcessingApp(QWidget):
                 self.populate_table(df)
 
     def populate_table(self, df):
-        self.table.setRowCount(0)
-        # Add 1 for the 'Expense' column
+        self.table.setRowCount(df.shape[0])
         self.table.setColumnCount(df.shape[1] + 1)
 
         for row in range(df.shape[0]):
-            self.table.insertRow(row)
+            unmatched_project = False
             for col in range(df.shape[1]):
                 item = QTableWidgetItem(str(df.iloc[row, col]))
                 self.table.setItem(row, col, item)
 
-            # Adding the combo box in the 'Expense' column for each row
-            combo_box = QComboBox()
-            # Add actual expenses
-            combo_box.addItems(['Expense 1', 'Expense 2', 'Expense 3'])
-            # Add the combo box in the new 'Expense' column
-            self.table.setCellWidget(row, df.shape[1], combo_box)
+            combo_box_projects = QComboBox()
+            project_names = self.get_project_names_from_db()
+            combo_box_projects.addItems(project_names)
+            self.table.setCellWidget(row, 4, combo_box_projects)
+
+            imported_project_name = str(df.iloc[row, 4])
+            matched_index = combo_box_projects.findText(imported_project_name)
+            if matched_index >= 0:
+                combo_box_projects.setCurrentIndex(matched_index)
+            else:
+                unmatched_project = True
+                break
+
+            combo_box_expenses = QComboBox()
+            expense_names = self.get_expense_names_from_db()
+            combo_box_expenses.addItems(expense_names)
+            self.table.setCellWidget(row, df.shape[1], combo_box_expenses)
+
+            if unmatched_project:
+                self.table.removeRow(row)
+                QMessageBox.warning(self, "Unmatched Project",
+                                    f"Row {row + 1} contains an unmatched project: {imported_project_name}. This row will be skipped.")
+
+    # Method to retrieve expense names from the database
+
+    def get_expense_names_from_db(self):
+        cursor = self.conn.cursor()
+        cursor.execute("SELECT expense_name FROM project_expenses")
+        return [name[0] for name in cursor.fetchall()]
+
+    def get_project_details_from_db(self, project_name):
+        cursor = self.conn.cursor()
+        cursor.execute(
+            'SELECT debit_account, vat_account, credit_account, cost_center FROM projects WHERE project_name = ?', (project_name,))
+        return cursor.fetchone()
 
     def process_invoices(self):
         self.invoice_data = []
@@ -144,14 +183,19 @@ class InvoiceProcessingApp(QWidget):
             invoice_number = self.table.item(row, 5).text()
             supplier = self.table.item(row, 6).text()
             tax_number = self.table.item(row, 7).text()
-            # Fetch project details from the database
+            expense = self.table.cellWidget(
+                row, 8).currentText()  # Fetch the selected expense
+
+            # Fetch project and expense details from the database
             project_details = self.get_project_details_from_db(project)
-            if project_details:
+            expense_details = self.get_expense_details_from_db(expense)
+            if project_details and expense_details:
                 debit_account, vat_account, credit_account, cost_center = project_details
+                expense_account = expense_details
             else:
                 error_rows.append(row)
                 continue
-
+            # Update the invoice data
             self.invoice_data.append({
                 'Date': date,
                 'Origin Amount': origin_amount,
@@ -164,7 +208,8 @@ class InvoiceProcessingApp(QWidget):
                 'Debit Account': debit_account,
                 'VAT Account': vat_account,
                 'Credit Account': credit_account,
-                'Cost Center': cost_center
+                'Cost Center': cost_center,
+                'Expense Debit Account': expense_account
             })
 
         # Process each invoice and write to Excel
@@ -182,32 +227,13 @@ class InvoiceProcessingApp(QWidget):
             supplier = invoice['Supplier']
             tax_number = invoice['Tax Number']
 
-            # Implement the original script's logic here
-            if project == 'الامام1':
-                debit_account = '50213'
-                vat_account = '21052'
-                credit_account = '2101171'
-                cost_center = '201'
-            elif project == 'الامام3':
-                debit_account = '1201220'
-                vat_account = '21054'
-                credit_account = '2101171'
-                cost_center = '107'
-            elif project == 'تركي الجديد':
-                debit_account = '1201220'
-                vat_account = '21054'
-                credit_account = '2101171'
-                cost_center = '102'
-            elif project == 'الامام2':
-                debit_account = '50813'
-                vat_account = '21052'
-                credit_account = '2101171'
-                cost_center = '106'
+            # Replace the hard-coded logic
+            project_details = self.get_project_account_details_from_db(project)
+            if project_details:
+                debit_account, vat_account, credit_account, cost_center = project_details
             else:
                 error_rows.append(row)
-                if error_rows:
-                    self.show_error_message(error_rows)
-                return
+                continue
 
             output_df = pd.concat([output_df, pd.DataFrame({
                 'التاريخ': [date],
@@ -255,6 +281,21 @@ class InvoiceProcessingApp(QWidget):
         self.table.clearContents()
         self.table.setRowCount(0)
 
+    def get_project_account_details_from_db(self, project_name):
+        cursor = self.conn.cursor()
+        cursor.execute('''
+            SELECT debit_account, vat_account, credit_account, cost_center
+            FROM projects
+            WHERE project_name = ?
+        ''', (project_name,))
+        return cursor.fetchone()
+
+    def get_expense_details_from_db(self, expense_name):
+        cursor = self.conn.cursor()
+        cursor.execute(
+            "SELECT expense_account FROM project_expenses WHERE expense_name = ?", (expense_name,))
+        return cursor.fetchone()
+
     def show_message_box(self, message):
         msg = QMessageBox()
         msg.setIcon(QMessageBox.Information)
@@ -262,11 +303,10 @@ class InvoiceProcessingApp(QWidget):
         msg.setWindowTitle("Process Complete")
         msg.exec_()
 
-    def get_project_details_from_db(self, project_name):
+    def get_project_names_from_db(self):
         cursor = self.conn.cursor()
-        cursor.execute(
-            'SELECT debit_account, vat_account, credit_account, cost_center FROM projects WHERE project_name = ?', (project_name,))
-        return cursor.fetchone()
+        cursor.execute("SELECT project_name FROM projects")
+        return [name[0] for name in cursor.fetchall()]
 
     def show_error_message(self, error_rows):
         msg = QMessageBox()
@@ -281,6 +321,18 @@ class InvoiceProcessingApp(QWidget):
     def add_row(self):
         row_position = self.table.rowCount()
         self.table.insertRow(row_position)
+
+        combo_box_projects = QComboBox()
+        project_names = self.get_project_names_from_db()
+        combo_box_projects.addItems(project_names)
+        # Set for 'Project' column (index 4)
+        self.table.setCellWidget(row_position, 4, combo_box_projects)
+
+        combo_box_expenses = QComboBox()
+        expense_names = self.get_expense_names_from_db()
+        combo_box_expenses.addItems(expense_names)
+        # Set for 'Expense' column (index 8)
+        self.table.setCellWidget(row_position, 8, combo_box_expenses)
 
     def delete_row(self):
         selected_rows = set(index.row()

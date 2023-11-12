@@ -131,10 +131,10 @@ class ExpenseManagement(QWidget):
 
     def clear_form(self):
         # Correct the line to clear the input fields
-        self.expense_name_input.clear()
-        self.expense_account_input.clear()
-        # Call the display function to reset the fields
-        self.display_current_expense()
+        self.expense_account_input.setText("")
+        self.expense_name_input.setText("")
+        # Reset the combo box to the first item
+        self.project_combo_box.setCurrentIndex(0)
 
     def add_expense_to_db(self):
         project_name = self.project_combo_box.currentText()
