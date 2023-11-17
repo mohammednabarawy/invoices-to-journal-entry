@@ -41,15 +41,19 @@ class ExpenseManagement(QWidget):
         self.expense_name_input = QLineEdit()
         self.expense_account_input = QLineEdit()
 
-        self.prev_button = QPushButton('Previous')
-        self.next_button = QPushButton('Next')
+        self.first_button = QPushButton('<<')
+        self.prev_button = QPushButton('<')
+        self.next_button = QPushButton('>')
+        self.last_button = QPushButton('>>')
         self.clear_button = QPushButton('Clear')
         self.add_button = QPushButton('Add')
         self.edit_button = QPushButton('Edit')
         self.delete_button = QPushButton('Delete')
 
+        self.first_button.clicked.connect(self.go_to_first_expense)
         self.prev_button.clicked.connect(self.show_previous_expense)
         self.next_button.clicked.connect(self.show_next_expense)
+        self.last_button.clicked.connect(self.go_to_last_expense)
         self.clear_button.clicked.connect(self.clear_form)
         self.add_button.clicked.connect(self.add_expense_to_db)
         self.edit_button.clicked.connect(self.edit_expense)
@@ -69,8 +73,10 @@ class ExpenseManagement(QWidget):
         details_layout.addWidget(self.expense_account_input)
 
         nav_layout = QHBoxLayout()
+        nav_layout.addWidget(self.first_button)
         nav_layout.addWidget(self.prev_button)
         nav_layout.addWidget(self.next_button)
+        nav_layout.addWidget(self.last_button)
 
         action_layout = QHBoxLayout()
         action_layout.addWidget(self.clear_button)
@@ -155,6 +161,7 @@ class ExpenseManagement(QWidget):
                 self.expenses = self.get_expenses_from_db()
                 self.current_expense_index = len(self.expenses) - 1
                 self.display_current_expense()
+                self.update_expense_label()
             except Exception as e:
                 print("Error adding expense to the database:", e)
                 self.show_message_box(
@@ -196,6 +203,13 @@ class ExpenseManagement(QWidget):
             self.conn.commit()
 
             self.show_message_box("Expense deleted successfully.")
+            # Refresh the data from the database
+            self.expenses = self.get_expenses_from_db()
+            # If deleted the last expense, move to the previous one
+            if self.current_expense_index >= len(self.expenses):
+                self.current_expense_index = max(0, len(self.expenses) - 1)
+            self.display_current_expense()
+            self.update_expense_label()
         else:
             self.show_message_box(
                 "Please specify the project name and expense name to delete.")
@@ -206,3 +220,26 @@ class ExpenseManagement(QWidget):
         msg.setText(message)
         msg.setWindowTitle("Message")
         msg.exec_()
+
+    def go_to_first_expense(self):
+        if self.expenses:
+            self.current_expense_index = 0
+            self.display_current_expense()
+            self.update_expense_label()
+
+    def go_to_last_expense(self):
+        if self.expenses:
+            self.current_expense_index = len(self.expenses) - 1
+            self.display_current_expense()
+            self.update_expense_label()
+
+
+# Example of usage
+if __name__ == "__main__":
+    import sys
+    from PyQt5.QtWidgets import QApplication
+
+    app = QApplication(sys.argv)
+    window = ExpenseManagement()
+    window.show()
+    sys.exit(app.exec_())

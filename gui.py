@@ -1,10 +1,11 @@
 import sys
 import pandas as pd
-from PyQt5.QtWidgets import QApplication, QWidget, QPushButton, QVBoxLayout, QTableWidget, QTableWidgetItem, QMessageBox
-from PyQt5.QtWidgets import QFileDialog  # Add QFileDialog import
+from PyQt5.QtWidgets import (
+    QApplication, QWidget, QPushButton, QVBoxLayout, QTableWidget, QTableWidgetItem,
+    QMessageBox, QFileDialog, QComboBox, QHBoxLayout, QLabel
+)
 import sqlite3
 from manage_projects import ManageProjects
-from PyQt5.QtWidgets import QApplication, QWidget, QComboBox, QPushButton, QVBoxLayout, QTableWidget, QTableWidgetItem, QMessageBox, QGridLayout, QFileDialog
 from ExpenseManagement import ExpenseManagement
 
 
@@ -12,7 +13,6 @@ class InvoiceProcessingApp(QWidget):
     def __init__(self):
         super().__init__()
 
-        self.invoice_data = []
         self.init_ui()
         self.manageprojects_window = ManageProjects()
         self.expense_management_window = ExpenseManagement()
@@ -37,8 +37,6 @@ class InvoiceProcessingApp(QWidget):
         self.delete_row_button = QPushButton('Delete Row')
         self.delete_row_button.clicked.connect(self.delete_row)
 
-        self.manageprojects_button = QPushButton('manage projects')
-        self.manageprojects_button.clicked.connect(self.show_manageprojects)
         self.manageprojects_button = QPushButton('Manage Projects')
         self.manageprojects_button.clicked.connect(self.show_manageprojects)
 
@@ -47,28 +45,31 @@ class InvoiceProcessingApp(QWidget):
             self.show_expense_management)
 
         # Create a grid layout for the buttons
-        button_layout = QGridLayout()
-        button_layout.addWidget(self.import_button, 0, 0)
-        button_layout.addWidget(self.add_button, 0, 1)
-        button_layout.addWidget(self.process_button, 0, 2)
-        button_layout.addWidget(self.add_row_button, 1, 0)
-        button_layout.addWidget(self.delete_row_button, 1, 1)
-        button_layout.addWidget(self.manageprojects_button, 1, 2)
-        button_layout.addWidget(
-            self.expense_management_button, 2, 0)  # Add the new button
+        button_layout = QHBoxLayout()
+        button_layout.addWidget(self.import_button)
+        button_layout.addWidget(self.add_button)
+        button_layout.addWidget(self.process_button)
+        button_layout.addWidget(self.add_row_button)
+        button_layout.addWidget(self.delete_row_button)
+        button_layout.addWidget(self.manageprojects_button)
+        button_layout.addWidget(self.expense_management_button)
+
+        # Create a label for instructions
+        label = QLabel('Double-click on a cell to edit values.')
 
         # Create table for invoice data
         self.table = QTableWidget()
-        self.table.setColumnCount(9)
+        self.table.setColumnCount(10)
         self.table.setHorizontalHeaderLabels([
             'Date', 'Origin Amount', 'Tax', 'Total Amount',
-            # Add 'Expense' to the headers
-            'Project', 'Invoice Number', 'Supplier', 'Tax Number', 'Expense'
+            'Project', 'Invoice Number', 'Supplier', 'Tax Number', 'Expense',
+            'Expense Account'
         ])
 
         # Create main layout
         main_layout = QVBoxLayout()
         main_layout.addLayout(button_layout)
+        main_layout.addWidget(label)
         main_layout.addWidget(self.table)
 
         self.setLayout(main_layout)
@@ -126,7 +127,7 @@ class InvoiceProcessingApp(QWidget):
 
     def populate_table(self, df):
         self.table.setRowCount(df.shape[0])
-        self.table.setColumnCount(df.shape[1] + 1)
+        self.table.setColumnCount(df.shape[1] + 2)
 
         for row in range(df.shape[0]):
             unmatched_project = False
@@ -156,8 +157,6 @@ class InvoiceProcessingApp(QWidget):
                 self.table.removeRow(row)
                 QMessageBox.warning(self, "Unmatched Project",
                                     f"Row {row + 1} contains an unmatched project: {imported_project_name}. This row will be skipped.")
-
-    # Method to retrieve expense names from the database
 
     def get_expense_names_from_db(self):
         cursor = self.conn.cursor()
@@ -191,7 +190,7 @@ class InvoiceProcessingApp(QWidget):
             expense_details = self.get_expense_details_from_db(expense)
             if project_details and expense_details:
                 debit_account, vat_account, credit_account, cost_center = project_details
-                expense_account = expense_details
+                expense_account = expense_details[0]
             else:
                 error_rows.append(row)
                 continue
@@ -205,11 +204,8 @@ class InvoiceProcessingApp(QWidget):
                 'Invoice Number': invoice_number,
                 'Supplier': supplier,
                 'Tax Number': tax_number,
-                'Debit Account': debit_account,
-                'VAT Account': vat_account,
-                'Credit Account': credit_account,
-                'Cost Center': cost_center,
-                'Expense Debit Account': expense_account
+                'Expense': expense,
+                'Expense Account': expense_account
             })
 
         # Process each invoice and write to Excel
@@ -226,15 +222,10 @@ class InvoiceProcessingApp(QWidget):
             invoice_number = invoice['Invoice Number']
             supplier = invoice['Supplier']
             tax_number = invoice['Tax Number']
+            expense = invoice['Expense']
+            expense_account = invoice['Expense Account']
 
             # Replace the hard-coded logic
-            project_details = self.get_project_account_details_from_db(project)
-            if project_details:
-                debit_account, vat_account, credit_account, cost_center = project_details
-            else:
-                error_rows.append(row)
-                continue
-
             output_df = pd.concat([output_df, pd.DataFrame({
                 'التاريخ': [date],
                 'مدين': [origin_amount],
@@ -280,6 +271,9 @@ class InvoiceProcessingApp(QWidget):
         # Clear the table after processing
         self.table.clearContents()
         self.table.setRowCount(0)
+
+        if error_rows:
+            self.show_error_message(error_rows)
 
     def get_project_account_details_from_db(self, project_name):
         cursor = self.conn.cursor()
