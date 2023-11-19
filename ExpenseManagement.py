@@ -1,218 +1,99 @@
-from PyQt5.QtWidgets import QWidget, QPushButton, QVBoxLayout, QLineEdit, QLabel, QMessageBox, QHBoxLayout, QComboBox
+from PyQt5.QtWidgets import (
+    QWidget, QVBoxLayout, QTableWidget, QTableWidgetItem, QPushButton, QMessageBox
+)
 import sqlite3
-
-
-conn = sqlite3.connect('projects.db')
-cursor = conn.cursor()
-
-# Create a table for expenses and their associated accounts, referencing the project
-cursor.execute('''
-    CREATE TABLE IF NOT EXISTS project_expenses (
-        id INTEGER PRIMARY KEY,
-        project_name TEXT,
-        expense_name TEXT,
-        expense_account TEXT,
-        FOREIGN KEY (project_name) REFERENCES projects(project_name)
-    )
-''')
-conn.commit()
 
 
 class ExpenseManagement(QWidget):
     def __init__(self):
         super().__init__()
         self.conn = sqlite3.connect('projects.db')
+        self.expense_table = QTableWidget(self)
         self.expenses = self.get_expenses_from_db()
-        self.current_expense_index = 0
         self.init_ui()
 
     def init_ui(self):
         self.setWindowTitle('Expense Management')
-        self.setGeometry(300, 300, 400, 200)
+        self.setGeometry(300, 300, 600, 400)
 
-        self.project_combo_box = QComboBox()
-        project_names = self.get_project_names_from_db()
-        self.project_combo_box.addItems(project_names)
+        self.expense_table.setColumnCount(4)
+        self.expense_table.setHorizontalHeaderLabels(
+            ['ID', 'Project Name', 'Expense Name', 'Expense Account'])
+        self.expense_table.setSelectionBehavior(QTableWidget.SelectRows)
+        self.expense_table.itemSelectionChanged.connect(
+            self.update_selected_expense)
+        self.display_expenses_table()
 
-        project_name_label = QLabel("Project Name:")
-        expense_name_label = QLabel("Expense Name:")
-        expense_account_label = QLabel("Expense Account:")
+        save_button = QPushButton('Save Changes')
+        add_button = QPushButton('Add Row')
+        delete_button = QPushButton('Delete Row')
 
-        self.expense_name_input = QLineEdit()
-        self.expense_account_input = QLineEdit()
+        save_button.clicked.connect(self.save_changes_to_db)
+        add_button.clicked.connect(self.add_row)
+        delete_button.clicked.connect(self.delete_row)
 
-        self.first_button = QPushButton('<<')
-        self.prev_button = QPushButton('<')
-        self.next_button = QPushButton('>')
-        self.last_button = QPushButton('>>')
-        self.clear_button = QPushButton('Clear')
-        self.add_button = QPushButton('Add')
-        self.edit_button = QPushButton('Edit')
-        self.delete_button = QPushButton('Delete')
-
-        self.first_button.clicked.connect(self.go_to_first_expense)
-        self.prev_button.clicked.connect(self.show_previous_expense)
-        self.next_button.clicked.connect(self.show_next_expense)
-        self.last_button.clicked.connect(self.go_to_last_expense)
-        self.clear_button.clicked.connect(self.clear_form)
-        self.add_button.clicked.connect(self.add_expense_to_db)
-        self.edit_button.clicked.connect(self.edit_expense)
-        self.delete_button.clicked.connect(self.delete_expense)
-
-        # Create a label for the current expense indicator
-        self.current_expense_label = QLabel()
-
-        details_layout = QVBoxLayout()
-        # Add the label to the layout
-        details_layout.addWidget(self.current_expense_label)
-        details_layout.addWidget(QLabel("Select Project:"))
-        details_layout.addWidget(self.project_combo_box)
-        details_layout.addWidget(expense_name_label)
-        details_layout.addWidget(self.expense_name_input)
-        details_layout.addWidget(expense_account_label)
-        details_layout.addWidget(self.expense_account_input)
-
-        nav_layout = QHBoxLayout()
-        nav_layout.addWidget(self.first_button)
-        nav_layout.addWidget(self.prev_button)
-        nav_layout.addWidget(self.next_button)
-        nav_layout.addWidget(self.last_button)
-
-        action_layout = QHBoxLayout()
-        action_layout.addWidget(self.clear_button)
-        action_layout.addWidget(self.add_button)
-        action_layout.addWidget(self.edit_button)
-        action_layout.addWidget(self.delete_button)
+        button_layout = QVBoxLayout()
+        button_layout.addWidget(save_button)
+        button_layout.addWidget(add_button)
+        button_layout.addWidget(delete_button)
 
         main_layout = QVBoxLayout()
-        main_layout.addLayout(details_layout)
-        main_layout.addLayout(nav_layout)
-        main_layout.addLayout(action_layout)
-
+        main_layout.addWidget(self.expense_table)
+        main_layout.addLayout(button_layout)
         self.setLayout(main_layout)
-        self.update_expense_label()
-        self.display_current_expense()
 
-    def get_project_names_from_db(self):
-        cursor = self.conn.cursor()
-        cursor.execute("SELECT project_name FROM projects")
-        # Fetch all project names and return as a list
-        return [name[0] for name in cursor.fetchall()]
+    def display_expenses_table(self):
+        self.expense_table.setRowCount(len(self.expenses))
+        for row, expense in enumerate(self.expenses):
+            for col, value in enumerate(expense):
+                item = QTableWidgetItem(str(value))
+                self.expense_table.setItem(row, col, item)
 
-    def update_expense_label(self):
-        total_expenses = len(self.expenses)
-        if total_expenses > 0:
-            self.current_expense_label.setText(
-                f"Current Expense: {self.current_expense_index + 1} of {total_expenses}"
-            )
-        else:
-            self.current_expense_label.setText("No expenses available.")
+    def update_selected_expense(self):
+        selected_row = self.expense_table.currentRow()
+        if 0 <= selected_row < len(self.expenses):
+            self.current_expense_index = selected_row
 
     def get_expenses_from_db(self):
         cursor = self.conn.cursor()
         cursor.execute("SELECT * FROM project_expenses")
         return cursor.fetchall()
 
-    def display_current_expense(self):
-        if self.expenses:
-            current_expense = self.expenses[self.current_expense_index]
-            # Assuming project_name is at index 1
-            self.project_combo_box.setCurrentText(current_expense[1])
-            # Assuming expense_name is at index 2
-            self.expense_name_input.setText(current_expense[2])
-            # Assuming expense_account is at index 3
-            self.expense_account_input.setText(current_expense[3])
+    def save_changes_to_db(self):
+        cursor = self.conn.cursor()
+        for row in range(self.expense_table.rowCount()):
+            expense_id = int(self.expense_table.item(row, 0).text())
+            project_name = self.expense_table.item(row, 1).text()
+            expense_name = self.expense_table.item(row, 2).text()
+            expense_account = self.expense_table.item(row, 3).text()
 
-    def show_previous_expense(self):
-        if self.current_expense_index > 0:
-            self.current_expense_index -= 1
-            self.display_current_expense()
-            self.update_expense_label()
+            cursor.execute('''
+                UPDATE project_expenses
+                SET project_name = ?, expense_name = ?, expense_account = ?
+                WHERE id = ?
+            ''', (project_name, expense_name, expense_account, expense_id))
 
-    def show_next_expense(self):
-        if self.current_expense_index < len(self.expenses) - 1:
-            self.current_expense_index += 1
-            self.display_current_expense()
-            self.update_expense_label()
+        self.conn.commit()
+        self.expenses = self.get_expenses_from_db()
+        self.display_expenses_table()
+        self.show_message_box("Changes saved successfully.")
 
-    def clear_form(self):
-        # Correct the line to clear the input fields
-        self.expense_account_input.setText("")
-        self.expense_name_input.setText("")
-        # Reset the combo box to the first item
-        self.project_combo_box.setCurrentIndex(0)
+    def add_row(self):
+        self.expense_table.setRowCount(self.expense_table.rowCount() + 1)
 
-    def add_expense_to_db(self):
-        project_name = self.project_combo_box.currentText()
-        expense_name = self.expense_name_input.text()
-        expense_account = self.expense_account_input.text()
-        print(
-            f"Adding: Project: {project_name}, Expense: {expense_name}, Account: {expense_account}")
-
-        if project_name and expense_name and expense_account:
-            cursor = self.conn.cursor()
-            try:
-                cursor.execute('''
-                    INSERT INTO project_expenses (project_name, expense_name, expense_account)
-                    VALUES (?, ?, ?)
-                ''', (project_name, expense_name, expense_account))
-                self.conn.commit()
-
-                self.expenses = self.get_expenses_from_db()
-                self.current_expense_index = len(self.expenses) - 1
-                self.display_current_expense()
-                self.update_expense_label()
-            except Exception as e:
-                print("Error adding expense to the database:", e)
-                self.show_message_box(
-                    "Failed to add expense. Please check the values and try again.")
-        else:
-            self.show_message_box(
-                "Please fill in all fields to add an expense.")
-
-    def edit_expense(self):
-        project_name = self.project_combo_box.currentText()
-        expense_name = self.expense_name_input.text()
-        expense_account = self.expense_account_input.text()
-
-        if project_name and expense_name and expense_account:
-            if self.expenses:
-                cursor = self.conn.cursor()
-                cursor.execute('''
-                    UPDATE project_expenses
-                    SET expense_account = ?
-                    WHERE project_name = ? AND expense_name = ?
-                ''', (expense_account, project_name, expense_name))
-                self.conn.commit()
-
-                self.show_message_box("Expense details updated successfully.")
-            else:
-                self.show_message_box("No expenses found in the database.")
-        else:
-            self.show_message_box(
-                "Please fill in all fields to edit an expense.")
-
-    def delete_expense(self):
-        project_name = self.project_combo_box.currentText()
-        expense_name = self.expense_name_input.text()
-
-        if project_name and expense_name:
+    def delete_row(self):
+        selected_row = self.expense_table.currentRow()
+        if 0 <= selected_row < len(self.expenses):
+            expense_id = int(self.expense_table.item(selected_row, 0).text())
             cursor = self.conn.cursor()
             cursor.execute(
-                'DELETE FROM project_expenses WHERE project_name = ? AND expense_name = ?', (project_name, expense_name))
+                'DELETE FROM project_expenses WHERE id = ?', (expense_id,))
             self.conn.commit()
-
-            self.show_message_box("Expense deleted successfully.")
-            # Refresh the data from the database
             self.expenses = self.get_expenses_from_db()
-            # If deleted the last expense, move to the previous one
-            if self.current_expense_index >= len(self.expenses):
-                self.current_expense_index = max(0, len(self.expenses) - 1)
-            self.display_current_expense()
-            self.update_expense_label()
+            self.display_expenses_table()
+            self.show_message_box("Row deleted successfully.")
         else:
-            self.show_message_box(
-                "Please specify the project name and expense name to delete.")
+            self.show_message_box("Please select a row to delete.")
 
     def show_message_box(self, message):
         msg = QMessageBox()
@@ -221,20 +102,7 @@ class ExpenseManagement(QWidget):
         msg.setWindowTitle("Message")
         msg.exec_()
 
-    def go_to_first_expense(self):
-        if self.expenses:
-            self.current_expense_index = 0
-            self.display_current_expense()
-            self.update_expense_label()
 
-    def go_to_last_expense(self):
-        if self.expenses:
-            self.current_expense_index = len(self.expenses) - 1
-            self.display_current_expense()
-            self.update_expense_label()
-
-
-# Example of usage
 if __name__ == "__main__":
     import sys
     from PyQt5.QtWidgets import QApplication
