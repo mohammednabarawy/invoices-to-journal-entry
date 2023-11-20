@@ -5,8 +5,10 @@ from PyQt5.QtWidgets import (
     QMessageBox, QFileDialog, QComboBox, QHBoxLayout, QLabel
 )
 import sqlite3
+from PyQt5.QtWidgets import QInputDialog
 from manage_projects import ManageProjects
 from ExpenseManagement import ExpenseManagement
+from SupplierManagement import SupplierManagement
 
 
 class InvoiceProcessingApp(QWidget):
@@ -16,6 +18,7 @@ class InvoiceProcessingApp(QWidget):
         self.init_ui()
         self.manageprojects_window = ManageProjects()
         self.expense_management_window = ExpenseManagement()
+        self.supplier_management_window = SupplierManagement()
 
     def init_ui(self):
         self.setWindowTitle('Invoice Processing App')
@@ -24,6 +27,10 @@ class InvoiceProcessingApp(QWidget):
         # Create buttons for various functionalities
         self.import_button = QPushButton('Import Invoices')
         self.import_button.clicked.connect(self.import_invoices)
+
+        self.supplier_management_button = QPushButton('Supplier Management')
+        self.supplier_management_button.clicked.connect(
+            self.show_supplier_management)
 
         self.add_button = QPushButton('Add Invoice')
         self.add_button.clicked.connect(self.add_invoice)
@@ -53,6 +60,8 @@ class InvoiceProcessingApp(QWidget):
         button_layout.addWidget(self.delete_row_button)
         button_layout.addWidget(self.manageprojects_button)
         button_layout.addWidget(self.expense_management_button)
+        button_layout.addWidget(
+            self.supplier_management_button)  # Moved to the top
 
         # Create a label for instructions
         label = QLabel('Double-click on a cell to edit values.')
@@ -77,6 +86,9 @@ class InvoiceProcessingApp(QWidget):
         # Initialize SQLite database and table
         self.conn = sqlite3.connect('projects.db')
         self.create_projects_table()
+
+    def show_supplier_management(self):
+        self.supplier_management_window.show()
 
     def show_manageprojects(self):
         self.manageprojects_window.show()
@@ -114,6 +126,10 @@ class InvoiceProcessingApp(QWidget):
         # Connect the currentIndexChanged signal to update_expense_account
         combo_box_expenses.currentIndexChanged.connect(
             lambda index, row=row_position: self.update_expense_account(row))
+        supplier_name = self.table.item(row_position, 6).text()
+        vat_number = self.table.item(row_position, 7).text()
+
+        self.check_and_add_supplier_to_db(supplier_name, vat_number)
 
     def import_invoices(self):
         file_dialog = QFileDialog()
@@ -131,6 +147,11 @@ class InvoiceProcessingApp(QWidget):
                 # Connect the currentIndexChanged signal for combo boxes
                 for row in range(self.table.rowCount()):
                     self.update_expense_account(row)
+                    supplier_name = self.table.item(row, 6).text()
+                    vat_number = self.table.item(row, 7).text()
+
+                    self.check_and_add_supplier_to_db(
+                        supplier_name, vat_number)
 
     def populate_table(self, df):
         self.table.setRowCount(df.shape[0])
@@ -199,10 +220,13 @@ class InvoiceProcessingApp(QWidget):
             # Fetch project and expense details from the database
             project_details = self.get_project_details_from_db(project)
             expense_details = self.get_expense_details_from_db(
-                project, expense)  # Pass project to get_expense_details_from_db
-            if project_details and expense_details:
+                project, expense)
+            supplier_details = self.get_supplier_details_from_db(supplier)
+
+            if project_details and expense_details and supplier_details:
                 debit_account, vat_account, credit_account, cost_center = project_details
                 expense_account = expense_details[0]
+                supplier_credit_account = supplier_details[0]
             else:
                 error_rows.append(row)
                 continue
@@ -224,7 +248,8 @@ class InvoiceProcessingApp(QWidget):
                 'Tax Number': tax_number,
                 'Expense': expense,
                 'Expense Account': expense_account,
-                'Debit Account': debit_account  # Add 'Debit Account' to the data
+                'Debit Account': debit_account,
+                'Credit Account': supplier_credit_account  # Add 'Credit Account' to the data
             })
 
         # Process each invoice and write to Excel
@@ -293,6 +318,12 @@ class InvoiceProcessingApp(QWidget):
 
         if error_rows:
             self.show_error_message(error_rows)
+
+    def get_supplier_details_from_db(self, supplier_name):
+        cursor = self.conn.cursor()
+        cursor.execute(
+            'SELECT credit_account FROM suppliers WHERE name = ?', (supplier_name,))
+        return cursor.fetchone()
 
     def get_project_account_details_from_db(self, project_name):
         cursor = self.conn.cursor()
@@ -396,6 +427,24 @@ class InvoiceProcessingApp(QWidget):
 
             # Update the text in the 'Expense Account' column
             self.table.item(row, 9).setText(expense_account[0])
+
+    def check_and_add_supplier_to_db(self, supplier_name, vat_number):
+        cursor = self.conn.cursor()
+
+        # Check if the supplier is already registered
+        cursor.execute(
+            "SELECT * FROM suppliers WHERE name = ? AND vat_number = ?", (supplier_name, vat_number))
+        existing_supplier = cursor.fetchone()
+
+        if not existing_supplier:
+            # If the supplier is not registered, prompt the user for details
+            account_number, ok_pressed = QInputDialog.getText(self, "Supplier Details",
+                                                              f"Enter Account Number for {supplier_name}:")
+            if ok_pressed:
+                # Add the new supplier to the database
+                cursor.execute("INSERT INTO suppliers (name, vat_number, account_number) VALUES (?, ?, ?)",
+                               (supplier_name, vat_number, account_number))
+                self.conn.commit()
 
 
 if __name__ == '__main__':

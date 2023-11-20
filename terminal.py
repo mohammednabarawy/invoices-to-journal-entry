@@ -2,7 +2,7 @@ import pandas as pd
 
 # Read the input Excel file
 df = pd.read_excel(
-    'C:\\Users\\aghna\\Desktop\\تحويل الفواتير الى قيد يومية\\input_invoices.xlsx')
+    'input_invoices.xlsx')
 
 # Create an empty DataFrame to store the processed data
 output_df = pd.DataFrame(columns=[
@@ -78,5 +78,5 @@ for index, row in df.iterrows():
     })])
 
 # Write the output DataFrame to an Excel file
-output_df.to_excel('C:\\Users\\aghna\\Desktop\\تحويل الفواتير الى قيد يومية\\output_file.xlsx', index=False)
+output_df.to_excel('output_file.xlsx', index=False)
 print("Done!")
