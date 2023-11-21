@@ -1,6 +1,8 @@
 from PyQt5.QtWidgets import (
     QWidget, QVBoxLayout, QTableWidget, QTableWidgetItem, QPushButton, QMessageBox
 )
+from PyQt5.QtGui import QIcon
+from PyQt5.QtCore import Qt
 import sqlite3
 
 
@@ -14,7 +16,8 @@ class ExpenseManagement(QWidget):
 
     def init_ui(self):
         self.setWindowTitle('Expense Management')
-        self.setGeometry(300, 300, 600, 400)
+        self.setGeometry(300, 300, 800, 600)
+        self.setStyleSheet("background-color: #f0f0f0; font-size: 14px;")
 
         self.expense_table.setColumnCount(4)
         self.expense_table.setHorizontalHeaderLabels(
@@ -27,6 +30,15 @@ class ExpenseManagement(QWidget):
         save_button = QPushButton('Save Changes')
         add_button = QPushButton('Add Row')
         delete_button = QPushButton('Delete Row')
+
+        save_button.setStyleSheet("background-color: #2196f3; color: #ffffff;")
+        add_button.setStyleSheet("background-color: #4caf50; color: #ffffff;")
+        delete_button.setStyleSheet(
+            "background-color: #f44336; color: #ffffff;")
+
+        save_button.setIcon(QIcon('save_icon.png'))
+        add_button.setIcon(QIcon('add_icon.png'))
+        delete_button.setIcon(QIcon('delete_icon.png'))
 
         save_button.clicked.connect(self.save_changes_to_db)
         add_button.clicked.connect(self.add_row)
