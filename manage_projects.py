@@ -61,6 +61,14 @@ class ManageProjects(QWidget):
         main_layout.addWidget(self.delete_button)
 
         self.setLayout(main_layout)
+        # Adjust column widths based on content
+        for col in range(self.project_table.columnCount()):
+            self.project_table.resizeColumnToContents(col)
+
+        # Ensure the UI fits all columns
+        table_width = self.project_table.horizontalHeader().length() + \
+            20  # Add a margin
+        self.setFixedWidth(max(table_width, 800))  # Set minimum width to 800
 
     def display_projects_table(self):
         self.projects = self.get_projects_from_db()  # Initialize projects here

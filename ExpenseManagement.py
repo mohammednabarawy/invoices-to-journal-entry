@@ -53,6 +53,14 @@ class ExpenseManagement(QWidget):
         main_layout.addWidget(self.expense_table)
         main_layout.addLayout(button_layout)
         self.setLayout(main_layout)
+        # Adjust column widths based on content
+        for col in range(self.expense_table.columnCount()):
+            self.expense_table.resizeColumnToContents(col)
+
+        # Ensure the UI fits all columns
+        table_width = self.expense_table.horizontalHeader().length() + \
+            20  # Add a margin
+        self.setFixedWidth(max(table_width, 800))  # Set minimum width to 800
 
     def display_expenses_table(self):
         self.expense_table.setRowCount(len(self.expenses))

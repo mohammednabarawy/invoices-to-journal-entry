@@ -64,6 +64,14 @@ class SupplierManagement(QWidget):
         main_layout.addWidget(self.save_button)
 
         self.setLayout(main_layout)
+        # Adjust column widths based on content
+        for col in range(self.table.columnCount()):
+            self.table.resizeColumnToContents(col)
+
+        # Ensure the UI fits all columns
+        table_width = self.table.horizontalHeader().length() + \
+            20  # Add a margin
+        self.setFixedWidth(max(table_width, 800))  # Set minimum width to 800
 
     def create_suppliers_table(self):
         cursor = self.conn.cursor()
