@@ -242,12 +242,12 @@ class InvoiceProcessingApp(QWidget):
             project_details = self.get_project_details_from_db(project)
             expense_details = self.get_expense_details_from_db(
                 project, expense)
-            supplier_details = self.get_supplier_details_from_db(supplier)
+            supplier_credit_account = self.get_supplier_credit_account_from_db(
+                supplier)
 
-            if project_details and expense_details and supplier_details:
+            if project_details and expense_details and supplier_credit_account:
                 debit_account, vat_account, credit_account, cost_center = project_details
                 expense_account = expense_details[0]
-                supplier_credit_account = supplier_details[0]
             else:
                 error_rows.append(row)
                 continue
@@ -270,9 +270,8 @@ class InvoiceProcessingApp(QWidget):
                 'Expense': expense,
                 'Expense Account': expense_account,
                 'Debit Account': debit_account,
-                'Credit Account': supplier_credit_account  # Add 'Credit Account' to the data
+                'Credit Account': credit_account  # Use the retrieved credit account
             })
-
         # Process each invoice and write to Excel
         for invoice in self.invoice_data:
             output_df = pd.DataFrame(columns=[
@@ -354,6 +353,14 @@ class InvoiceProcessingApp(QWidget):
             WHERE project_name = ?
         ''', (project_name,))
         return cursor.fetchone()
+
+    def get_supplier_credit_account_from_db(self, supplier_name):
+        cursor = self.conn.cursor()
+        cursor.execute(
+            'SELECT credit_account FROM suppliers WHERE name = ?', (supplier_name,))
+        result = cursor.fetchone()
+        print(f"Supplier: {supplier_name}, Credit Account Result: {result}")
+        return result[0] if result else None
 
     def get_expense_details_from_db(self, project_name, expense_name):
         cursor = self.conn.cursor()
