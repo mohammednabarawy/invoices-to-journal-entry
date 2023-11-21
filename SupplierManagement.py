@@ -1,6 +1,9 @@
-from PyQt5.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QPushButton, QLabel, QLineEdit, QTableWidget, QTableWidgetItem, QMessageBox
+from PyQt5.QtWidgets import (
+    QWidget, QVBoxLayout, QPushButton, QTableWidget, QTableWidgetItem, QMessageBox, QApplication, QHeaderView
+)
+from PyQt5.QtGui import QIcon
+from PyQt5.QtCore import Qt
 import sqlite3
-from PyQt5.QtWidgets import QApplication, QInputDialog
 
 
 class SupplierManagement(QWidget):
@@ -18,24 +21,39 @@ class SupplierManagement(QWidget):
         self.load_suppliers_from_db()
 
     def init_ui(self):
-        self.setGeometry(300, 300, 600, 400)
+        self.setGeometry(300, 300, 800, 600)
         self.setWindowTitle('Supplier Management')
+        self.setStyleSheet("background-color: #f0f0f0; font-size: 14px;")
 
         # Table for displaying and editing supplier information
         self.table = QTableWidget()
         self.table.setColumnCount(3)
         self.table.setHorizontalHeaderLabels(
             ['Supplier Name', 'VAT Number', 'Account Number'])
+        self.table.setStyleSheet(
+            "background-color: #ffffff; selection-background-color: #b3d9ff;")
+        self.table.horizontalHeader().setDefaultAlignment(Qt.AlignCenter)
+        self.table.setAlternatingRowColors(True)
+        self.table.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
 
         # Buttons for adding and deleting rows
         self.add_row_button = QPushButton('Add Row')
         self.delete_row_button = QPushButton('Delete Row')
+        self.save_button = QPushButton('Save Changes')
+
+        self.add_row_button.setStyleSheet(
+            "background-color: #4caf50; color: #ffffff;")
+        self.delete_row_button.setStyleSheet(
+            "background-color: #f44336; color: #ffffff;")
+        self.save_button.setStyleSheet(
+            "background-color: #2196f3; color: #ffffff;")
+
+        self.add_row_button.setIcon(QIcon('add_icon.png'))
+        self.delete_row_button.setIcon(QIcon('delete_icon.png'))
+        self.save_button.setIcon(QIcon('save_icon.png'))
 
         self.add_row_button.clicked.connect(self.add_row)
         self.delete_row_button.clicked.connect(self.delete_row)
-
-        # Button for saving changes to the database
-        self.save_button = QPushButton('Save Changes')
         self.save_button.clicked.connect(self.save_changes_to_db)
 
         # Vertical layout for the main window
@@ -97,7 +115,7 @@ class SupplierManagement(QWidget):
             vat_number = self.table.item(row, 1).text()
             account_number = self.table.item(row, 2).text()
 
-            cursor.execute("DELETE FROM suppliers WHERE name=? AND vat_number=? AND account_number=?",
+            cursor.execute("DELETE FROM suppliers WHERE name=? AND vat_number=? AND credit_account=?",
                            (name, vat_number, account_number))
 
             self.conn.commit()
@@ -112,7 +130,7 @@ class SupplierManagement(QWidget):
             vat_number = self.table.item(row, 1).text()
             account_number = self.table.item(row, 2).text()
 
-            cursor.execute("INSERT INTO suppliers (name, vat_number, account_number) VALUES (?, ?, ?)",
+            cursor.execute("INSERT INTO suppliers (name, vat_number, credit_account) VALUES (?, ?, ?)",
                            (name, vat_number, account_number))
 
         self.conn.commit()
