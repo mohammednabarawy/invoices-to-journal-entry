@@ -166,6 +166,13 @@ class InvoiceProcessingApp(QWidget):
 
                     self.check_and_add_supplier_to_db(
                         supplier_name, vat_number)
+        # Adjust column widths based on content
+        for col in range(self.table.columnCount()):
+            self.table.resizeColumnToContents(col)
+
+        # Ensure the UI fits all columns
+        table_width = self.table.horizontalHeader().length() + 20  # Add a margin
+        self.setFixedWidth(max(table_width, 800))  # Set minimum width to 800
 
     def populate_table(self, df):
         self.table.setRowCount(df.shape[0])
