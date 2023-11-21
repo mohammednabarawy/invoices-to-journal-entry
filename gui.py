@@ -459,12 +459,12 @@ class InvoiceProcessingApp(QWidget):
 
         if not existing_supplier:
             # If the supplier is not registered, prompt the user for details
-            account_number, ok_pressed = QInputDialog.getText(self, "Supplier Details",
+            credit_account, ok_pressed = QInputDialog.getText(self, "Supplier Details",
                                                               f"Enter Account Number for {supplier_name}:")
             if ok_pressed:
                 # Add the new supplier to the database
-                cursor.execute("INSERT INTO suppliers (name, vat_number, account_number) VALUES (?, ?, ?)",
-                               (supplier_name, vat_number, account_number))
+                cursor.execute("INSERT INTO suppliers (name, vat_number, credit_account) VALUES (?, ?, ?)",
+                               (supplier_name, vat_number, credit_account))
                 self.conn.commit()
 
 

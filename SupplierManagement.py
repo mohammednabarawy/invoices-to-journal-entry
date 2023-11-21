@@ -121,10 +121,10 @@ class SupplierManagement(QWidget):
         if self.table.item(row, 0) is not None:
             name = self.table.item(row, 0).text()
             vat_number = self.table.item(row, 1).text()
-            account_number = self.table.item(row, 2).text()
+            credit_account = self.table.item(row, 2).text()
 
             cursor.execute("DELETE FROM suppliers WHERE name=? AND vat_number=? AND credit_account=?",
-                           (name, vat_number, account_number))
+                           (name, vat_number, credit_account))
 
             self.conn.commit()
 
@@ -136,10 +136,10 @@ class SupplierManagement(QWidget):
         for row in range(self.table.rowCount()):
             name = self.table.item(row, 0).text()
             vat_number = self.table.item(row, 1).text()
-            account_number = self.table.item(row, 2).text()
+            credit_account = self.table.item(row, 2).text()
 
             cursor.execute("INSERT INTO suppliers (name, vat_number, credit_account) VALUES (?, ?, ?)",
-                           (name, vat_number, account_number))
+                           (name, vat_number, credit_account))
 
         self.conn.commit()
         self.show_message_box("Changes saved successfully.")
