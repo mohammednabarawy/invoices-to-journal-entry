@@ -51,6 +51,17 @@ class InvoiceProcessingApp(QWidget):
         self.expense_management_button.clicked.connect(
             self.show_expense_management)
 
+        # Apply styles to buttons
+        button_style = "QPushButton { background-color: #4CAF50; color: white; font-size: 14px; }"
+        self.import_button.setStyleSheet(button_style)
+        self.supplier_management_button.setStyleSheet(button_style)
+        self.add_button.setStyleSheet(button_style)
+        self.process_button.setStyleSheet(button_style)
+        self.add_row_button.setStyleSheet(button_style)
+        self.delete_row_button.setStyleSheet(button_style)
+        self.manageprojects_button.setStyleSheet(button_style)
+        self.expense_management_button.setStyleSheet(button_style)
+
         # Create a grid layout for the buttons
         button_layout = QHBoxLayout()
         button_layout.addWidget(self.import_button)
@@ -80,6 +91,9 @@ class InvoiceProcessingApp(QWidget):
         main_layout.addLayout(button_layout)
         main_layout.addWidget(label)
         main_layout.addWidget(self.table)
+
+        # Apply background color to the main layout
+        self.setStyleSheet("background-color: #f0f0f0;")
 
         self.setLayout(main_layout)
 
