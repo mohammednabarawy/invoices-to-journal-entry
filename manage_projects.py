@@ -1,6 +1,8 @@
 from PyQt5.QtWidgets import (
     QWidget, QVBoxLayout, QTableWidget, QTableWidgetItem, QPushButton, QMessageBox, QInputDialog
 )
+from PyQt5.QtGui import QIcon
+from PyQt5.QtCore import Qt
 import sqlite3
 
 
@@ -14,8 +16,9 @@ class ManageProjects(QWidget):
         self.display_current_project()
 
     def init_ui(self):
-        self.setGeometry(300, 300, 600, 400)
+        self.setGeometry(300, 300, 800, 600)
         self.setWindowTitle('Manage Projects')
+        self.setStyleSheet("background-color: #f0f0f0; font-size: 14px;")
 
         # Table for displaying projects
         self.project_table = QTableWidget(self)
@@ -36,6 +39,19 @@ class ManageProjects(QWidget):
         self.add_button.clicked.connect(self.add_project)
         self.save_button.clicked.connect(self.save_changes_to_db)
         self.delete_button.clicked.connect(self.delete_project)
+
+        # Apply styles to buttons
+        self.add_button.setStyleSheet(
+            "background-color: #4caf50; color: #ffffff;")
+        self.save_button.setStyleSheet(
+            "background-color: #2196f3; color: #ffffff;")
+        self.delete_button.setStyleSheet(
+            "background-color: #f44336; color: #ffffff;")
+
+        # Add icons to buttons
+        self.add_button.setIcon(QIcon('add_icon.png'))
+        self.save_button.setIcon(QIcon('save_icon.png'))
+        self.delete_button.setIcon(QIcon('delete_icon.png'))
 
         # Vertical layout for the table and buttons
         main_layout = QVBoxLayout()
@@ -85,11 +101,15 @@ class ManageProjects(QWidget):
                 credit_account = self.project_table.item(row, 3).text()
                 cost_center = self.project_table.item(row, 4).text()
 
+                if not project_name:  # Skip empty rows
+                    continue
+
                 cursor.execute('''
-                    UPDATE projects
-                    SET debit_account = ?, vat_account = ?, credit_account = ?, cost_center = ?
-                    WHERE project_name = ?
-                ''', (debit_account, vat_account, credit_account, cost_center, project_name))
+                    INSERT OR REPLACE INTO projects
+                    (project_name, debit_account, vat_account, credit_account, cost_center)
+                    VALUES (?, ?, ?, ?, ?)
+                ''', (project_name, debit_account, vat_account, credit_account, cost_center))
+
             self.conn.commit()
             self.get_projects_from_db()
             self.show_message_box("Changes saved successfully.")
@@ -99,7 +119,14 @@ class ManageProjects(QWidget):
     def delete_project(self):
         selected_row = self.project_table.currentRow()
         if 0 <= selected_row < len(self.projects):
-            self.project_table.removeRow(selected_row)
+            project_name = self.project_table.item(selected_row, 0).text()
+            cursor = self.conn.cursor()
+            cursor.execute(
+                'DELETE FROM projects WHERE project_name = ?', (project_name,))
+            self.conn.commit()
+            self.get_projects_from_db()
+            self.display_projects_table()
+            self.show_message_box("Row deleted successfully.")
         else:
             self.show_message_box("Please select a row to delete.")
 
