@@ -1,53 +1,54 @@
 # This workflow will install Python dependencies, run tests and lint with a single version of Python
-# For more information see: https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-python
+# For more information see: https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-python 
 
-name: journal entry app
+name: journal entry app 
 
 on:
-  push:
-    branches: [ "main" ]
-  pull_request:
-    branches: [ "main" ]
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ] 
 
 permissions:
-  contents: read
+  contents: read 
 
 jobs:
-  build:
+  build: 
 
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-latest 
 
-    steps:
-    - uses: actions/checkout@v3
+    steps:
+    - uses: actions/checkout@v3 
 
-    - name: Set up Python 3.10
-      uses: actions/setup-python@v3
-      with:
-        python-version: "3.10"
+    - name: Set up Python 3.10
+      uses: actions/setup-python@v3
+      with:
+        python-version: "3.10" 
 
-    - name: Install dependencies
-      run: |
-        python -m pip install --upgrade pip
-        pip install flake8 pytest pipreqs
-        pipreqs .
-        if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install flake8 pytest pipreqs
+        pipreqs .
+        if [ -f requirements.txt ]; then pip install -r requirements.txt; fi 
 
-    - name: Lint with flake8
-      run: |
-        flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
-        flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
+    - name: Lint with flake8
+      run: |
+        flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
+        flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics 
 
-    - name: Install Sphinx
-      run: |
-        pip install sphinx
+    - name: Install Sphinx
+      run: |
+        pip install sphinx 
 
-    - name: Create documentation structure
-      run: |
-        mkdir -p docs/source
-        touch docs/source/index.rst
+    - name: Create documentation structure
+      run: |
+        mkdir -p docs/source
+        echo "Sphinx Project" > docs/source/index.rst  # Add a simple index.rst file
+        cd docs/source
+        sphinx-quickstart -q -p 'My Project' -a 'My Author' --sep --ext-autodoc --ext-viewcode --ext-doctest --makefile --no-batchfile --no-use-make-mode --no-makefile
+        cd ../.. 
 
-    - name: Build documentation
-      run: |
-        cd docs/source
-        sphinx-quickstart -q
-        sphinx-build -b html . ../build  # Replace "html" with the desired output format
+    - name: Build documentation
+      run: |
+        sphinx-build -b html docs/source docs/build  # Replace "html" with the desired output format
