@@ -48,4 +48,6 @@ jobs:
 
     - name: Build documentation
       run: |
-        sphinx-build -b html docs/source docs/build  # Replace "html" with the desired output forma
+        cd docs/source
+        sphinx-quickstart -q
+        sphinx-build -b html . ../build  # Replace "html" with the desired output format
