@@ -1,7 +1,7 @@
 # This workflow will install Python dependencies, run tests and lint with a single version of Python
 # For more information see: https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-python
 
-name: Python application
+name: journal entry app
 
 on:
   push:
@@ -15,7 +15,7 @@ permissions:
 jobs:
   build:
 
-    runs-on: windows
+    runs-on: ubuntu-latest
 
     steps:
     - uses: actions/checkout@v3
@@ -38,3 +38,8 @@ jobs:
     - name: Test with pytest
       run: |
         pytest
+    - name: Build and deploy documentation
+      run: |
+        pip install sphinx
+        sphinx-quickstart -q -p docs/source -a "Your Project" -v 0.1 -r 0.1 --ext-autodoc
+        sphinx-build -b html docs/source docs/build
