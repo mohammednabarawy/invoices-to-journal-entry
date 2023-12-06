@@ -40,6 +40,11 @@ for index, row in df.iterrows():
         vat_account = '21052'
         credit_account = '2101171'
         cost_center = '106'
+    elif project == 'فلل التخصصي':
+        debit_account = '1201915'
+        vat_account = '21052'
+        credit_account = '2101171'
+        cost_center = '110'
     else:
         # If project name is not recognized, skip this row
         continue
