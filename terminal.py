@@ -42,7 +42,7 @@ for index, row in df.iterrows():
         cost_center = '106'
     elif project == 'فلل التخصصي':
         debit_account = '1201915'
-        vat_account = '21052'
+        vat_account = '21054'
         credit_account = '2101171'
         cost_center = '110'
     else:
