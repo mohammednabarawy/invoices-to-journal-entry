@@ -161,18 +161,29 @@ class InvoiceProcessingApp(QWidget):
                 # Connect the currentIndexChanged signal for combo boxes
                 for row in range(self.table.rowCount()):
                     self.update_expense_account(row)
-                    supplier_name = self.table.item(row, 6).text()
-                    vat_number = self.table.item(row, 7).text()
+
+                    # Check if the item is not None before accessing its text attribute
+                    if self.table.item(row, 6) is not None:
+                        supplier_name = self.table.item(row, 6).text()
+                    else:
+                        supplier_name = ""  # Set to a default value if the item is None
+
+                    if self.table.item(row, 7) is not None:
+                        vat_number = self.table.item(row, 7).text()
+                    else:
+                        vat_number = ""  # Set to a default value if the item is None
 
                     self.check_and_add_supplier_to_db(
                         supplier_name, vat_number)
-        # Adjust column widths based on content
-        for col in range(self.table.columnCount()):
-            self.table.resizeColumnToContents(col)
 
-        # Ensure the UI fits all columns
-        table_width = self.table.horizontalHeader().length() + 20  # Add a margin
-        self.setFixedWidth(max(table_width, 800))  # Set minimum width to 800
+            # Adjust column widths based on content
+            for col in range(self.table.columnCount()):
+                self.table.resizeColumnToContents(col)
+
+            # Ensure the UI fits all columns
+            table_width = self.table.horizontalHeader().length() + 20  # Add a margin
+            # Set minimum width to 800
+            self.setFixedWidth(max(table_width, 800))
 
     def populate_table(self, df):
         self.table.setRowCount(df.shape[0])
@@ -181,7 +192,8 @@ class InvoiceProcessingApp(QWidget):
         for row in range(df.shape[0]):
             unmatched_project = False
             for col in range(df.shape[1]):
-                item = QTableWidgetItem(str(df.iloc[row, col]))
+                cell_value = str(df.iloc[row, col])
+                item = QTableWidgetItem(cell_value)
                 self.table.setItem(row, col, item)
 
             combo_box_projects = QComboBox()
@@ -210,6 +222,11 @@ class InvoiceProcessingApp(QWidget):
                 self.table.removeRow(row)
                 QMessageBox.warning(self, "Unmatched Project",
                                     f"Row {row + 1} contains an unmatched project: {imported_project_name}. This row will be skipped.")
+
+            # Ensure QTableWidgetItem objects are created for each cell
+            for col in range(self.table.columnCount()):
+                if self.table.item(row, col) is None:
+                    self.table.setItem(row, col, QTableWidgetItem())
 
     def get_expense_names_from_db(self):
         cursor = self.conn.cursor()
@@ -421,40 +438,43 @@ class InvoiceProcessingApp(QWidget):
         combo_box_expenses = self.table.cellWidget(row, 8)
         combo_box_projects = self.table.cellWidget(row, 4)
 
-        selected_expense = combo_box_expenses.currentText()
-        selected_project = combo_box_projects.currentText()
+        # Check if combo_box_expenses is not None
+        if combo_box_expenses is not None:
+            selected_expense = combo_box_expenses.currentText()
 
-        # Retrieve the expense account from the database
-        expense_account = self.get_expense_details_from_db(
-            selected_project, selected_expense)
+            selected_project = combo_box_projects.currentText()
 
-        if expense_account:
-            # Ensure there is a QTableWidgetItem in the 'Expense Account' column
-            if self.table.item(row, 9) is None:
-                self.table.setItem(row, 9, QTableWidgetItem())
-
-            # Update the text in the 'Expense Account' column
-            self.table.item(row, 9).setText(expense_account[0])
-        else:
-            # Expense not found, add a new record with the default value "111"
-            default_expense_account = "111"
-            cursor = self.conn.cursor()
-            cursor.execute('''
-                INSERT INTO project_expenses (project_name, expense_name, expense_account)
-                VALUES (?, ?, ?)
-            ''', (selected_project, selected_expense, default_expense_account))
-            self.conn.commit()
-
-            # Retrieve the newly added record
+            # Retrieve the expense account from the database
             expense_account = self.get_expense_details_from_db(
                 selected_project, selected_expense)
 
-            # Ensure there is a QTableWidgetItem in the 'Expense Account' column
-            if self.table.item(row, 9) is None:
-                self.table.setItem(row, 9, QTableWidgetItem())
+            if expense_account:
+                # Ensure there is a QTableWidgetItem in the 'Expense Account' column
+                if self.table.item(row, 9) is None:
+                    self.table.setItem(row, 9, QTableWidgetItem())
 
-            # Update the text in the 'Expense Account' column
-            self.table.item(row, 9).setText(expense_account[0])
+                # Update the text in the 'Expense Account' column
+                self.table.item(row, 9).setText(expense_account[0])
+            else:
+                # Expense not found, add a new record with the default value "111"
+                default_expense_account = "111"
+                cursor = self.conn.cursor()
+                cursor.execute('''
+                    INSERT INTO project_expenses (project_name, expense_name, expense_account)
+                    VALUES (?, ?, ?)
+                ''', (selected_project, selected_expense, default_expense_account))
+                self.conn.commit()
+
+                # Retrieve the newly added record
+                expense_account = self.get_expense_details_from_db(
+                    selected_project, selected_expense)
+
+                # Ensure there is a QTableWidgetItem in the 'Expense Account' column
+                if self.table.item(row, 9) is None:
+                    self.table.setItem(row, 9, QTableWidgetItem())
+
+                # Update the text in the 'Expense Account' column
+                self.table.item(row, 9).setText(expense_account[0])
 
     def check_and_add_supplier_to_db(self, supplier_name, vat_number):
         cursor = self.conn.cursor()
