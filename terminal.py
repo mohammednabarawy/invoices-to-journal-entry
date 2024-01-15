@@ -2,7 +2,7 @@ import pandas as pd
 
 # Read the input Excel file
 df = pd.read_excel(
-    'input_invoices.xlsx')
+    'F:\\original\\coding\\invoices-to-journal-entry\\input_invoices.xlsx')
 
 # Create an empty DataFrame to store the processed data
 output_df = pd.DataFrame(columns=[
@@ -50,6 +50,11 @@ for index, row in df.iterrows():
         vat_account = '21054'
         credit_account = '2101171'
         cost_center = '109'
+    elif project == 'عمارة التخصصي':
+        debit_account = '1202021'
+        vat_account = '21054'
+        credit_account = '2101171'
+        cost_center = '111'
     else:
         # If project name is not recognized, skip this row
         continue
@@ -88,5 +93,6 @@ for index, row in df.iterrows():
     })])
 
 # Write the output DataFrame to an Excel file
-output_df.to_excel('output_file.xlsx', index=False)
+output_df.to_excel(
+    'F:\\original\\coding\\invoices-to-journal-entry\\output_file.xlsx', index=False)
 print("Done!")
