@@ -26,35 +26,35 @@ for index, row in df.iterrows():
         credit_account = '2101171'
         cost_center = '201'
     elif project == 'الامام3':
-        debit_account = '1201220'
+        debit_account = '12030201'
         vat_account = '21054'
         credit_account = '2101171'
         cost_center = '107'
     elif project == 'تركي الجديد':
-        debit_account = '1201220'
+        debit_account = '12030201'
         vat_account = '21054'
         credit_account = '2101171'
         cost_center = '102'
     elif project == 'الامام2':
-        debit_account = '50813'
+        debit_account = '50213'
         vat_account = '21052'
         credit_account = '2101171'
         cost_center = '106'
     elif project == 'فلل التخصصي':
-        debit_account = '1201915'
+        debit_account = '12030201'
         vat_account = '21054'
         credit_account = '2101171'
         cost_center = '110'
     elif project == 'نخيل الجامعة':
-        debit_account = '120162'
+        debit_account = '12030201'
         vat_account = '21054'
         credit_account = '2101171'
         cost_center = '109'
     elif project == 'عمارة التخصصي':
-        debit_account = '1202021'
-        vat_account = '21054'
+        debit_account = '50213'
+        vat_account = '21052'
         credit_account = '2101171'
-        cost_center = '111'
+        cost_center = '202'
     else:
         # If project name is not recognized, skip this row
         continue
